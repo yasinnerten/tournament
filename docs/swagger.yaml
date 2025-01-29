@@ -1,0 +1,691 @@
+basePath: /
+definitions:
+  model.Tournament:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      prize:
+        minimum: 0
+        type: integer
+      status:
+        $ref: '#/definitions/model.TournamentStatus'
+      users:
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+    required:
+    - name
+    - status
+    type: object
+  model.TournamentStatus:
+    enum:
+    - planned
+    - ongoing
+    - finished
+    type: string
+    x-enum-varnames:
+    - Planned
+    - Ongoing
+    - Finished
+  model.User:
+    properties:
+      id:
+        type: integer
+      level:
+        minimum: 0
+        type: integer
+      money:
+        minimum: 0
+        type: integer
+      name:
+        type: string
+      score:
+        minimum: 0
+        type: number
+    required:
+    - name
+    type: object
+host: 10.0.2.10:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server for a tournament application.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Tournament App API
+  version: "1.0"
+paths:
+  /clear-database:
+    post:
+      description: Clear all data from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Clear the database
+      tags:
+      - health
+  /health:
+    get:
+      description: Check the health status of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get health status
+      tags:
+      - health
+  /leaderboard:
+    get:
+      description: Get the leaderboard
+      parameters:
+      - description: Start
+        in: query
+        name: start
+        type: integer
+      - description: Stop
+        in: query
+        name: stop
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get leaderboard
+      tags:
+      - leaderboard
+  /leaderboard/active:
+    get:
+      description: Get the active leaderboard
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get active leaderboard
+      tags:
+      - leaderboard
+  /leaderboard/tournament/{id}:
+    get:
+      description: Get the leaderboard for a specific tournament
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get leaderboard by tournament ID
+      tags:
+      - leaderboard
+  /leaderboard/tournament/{id}/active:
+    get:
+      description: Get the active leaderboard for a specific tournament
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get active leaderboard by tournament ID
+      tags:
+      - leaderboard
+  /leaderboard/tournament/{id}/finished:
+    get:
+      description: Get the finished leaderboard for a specific tournament
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get finished leaderboard by tournament ID
+      tags:
+      - leaderboard
+  /leaderboard/user/{id}:
+    get:
+      description: Get the leaderboard for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get leaderboard by user ID
+      tags:
+      - leaderboard
+  /leaderboard/user/{id}/active:
+    get:
+      description: Get the active leaderboard for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get active leaderboard by user ID
+      tags:
+      - leaderboard
+  /tournaments:
+    get:
+      description: Get a list of all tournaments
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Tournament'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all tournaments
+      tags:
+      - tournaments
+    post:
+      consumes:
+      - application/json
+      description: Create a new tournament with the input payload
+      parameters:
+      - description: Tournament
+        in: body
+        name: tournament
+        required: true
+        schema:
+          properties:
+            ' prize':
+              type: integer
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Tournament'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new tournament
+      tags:
+      - tournaments
+  /tournaments/{id}:
+    delete:
+      description: Delete a tournament by ID
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a tournament
+      tags:
+      - tournaments
+    get:
+      description: Get a tournament by its ID
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Tournament'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a tournament by ID
+      tags:
+      - tournaments
+    put:
+      consumes:
+      - application/json
+      description: Update a tournament by ID with the input payload
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Tournament
+        in: body
+        name: tournament
+        required: true
+        schema:
+          $ref: '#/definitions/model.Tournament'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Tournament'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a tournament
+      tags:
+      - tournaments
+  /tournaments/{id}/end:
+    post:
+      description: End a tournament by ID
+      parameters:
+      - description: Tournament ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: End a tournament
+      tags:
+      - tournaments
+  /tournaments/join:
+    post:
+      consumes:
+      - application/json
+      description: Join a tournament with the input payload
+      parameters:
+      - description: Join Request
+        in: body
+        name: joinRequest
+        required: true
+        schema:
+          properties:
+            ' user_id':
+              type: integer
+            tournament_id:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Join a tournament
+      tags:
+      - tournaments
+  /tournaments/ongoing:
+    get:
+      description: Get a list of ongoing tournaments
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Tournament'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get ongoing tournaments
+      tags:
+      - tournaments
+  /users:
+    get:
+      description: Get a list of all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the input payload
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          properties:
+            ' level':
+              type: integer
+            ' money':
+              type: integer
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: Delete a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      description: Get a user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user by ID with the input payload
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          properties:
+            ' level':
+              type: integer
+            ' money':
+              type: integer
+            name:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a user
+      tags:
+      - users
+  /users/{id}/levelup:
+    post:
+      description: Level up a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Level up a user
+      tags:
+      - users
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"

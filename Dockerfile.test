@@ -1,0 +1,31 @@
+FROM golang:alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+RUN go mod tidy
+RUN go mod vendor
+
+COPY . .
+
+# Copy the .env file for debugging purposes
+COPY .env .env
+# List the contents of the /app directory to verify the presence of the .env file
+RUN ls -la /app
+RUN apk add --no-cache git
+
+RUN ls -la /app/scripts
+# Run the build script for testing purposes
+RUN /app/scripts/build.sh
+
+RUN /app/scripts/test.sh
+
+EXPOSE 8080
+CMD ["ls", "-la ", "/app"]
+
+# kaldırdım çünkü go-acc kullanırken hata aldık ama localimde çalıştı enteresan olay
+
+# RUN go get -u github.com/ory/go-acc
+# RUN go install github.com/ory/go-acc@latest
+# CMD ["go-acc", "./...", "--output=coverage.out"]

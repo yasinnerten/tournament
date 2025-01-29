@@ -1,0 +1,90 @@
+done - 
+Update endpoints related with users now need to give their level information, its not set by their money level anymore. Give an error when missed information given.
+
+done - 
+Add an enpoint for tournament.go. It contains ongoing tournament list and users that involved. User can join a tournament. When 3 user joined a tournament, leaderboard will be available via redis database. Tournament datas should stored on postgres. Add tournament model file and service file like before. Seperate them from endpoints. 
+
+done - 
+create also leaderboard service file /service/leaderboard.go and leaderboard model file /model/leaderboard.go with these changes. with these informaiton. Service files should include functions that uses validations when we need to update db. Model file should include struct and validate codes.
+
+done - 
+Change db structure with adding crud file. Carry all code to /internal/crud/tournament.go to related with tournament.go db sessions codes. /internal/db/postgres just include InitPostgres function to call postgres sessions. Give me the go files below:
+/internal/crud/leaderboard.go
+/internal/crud/users.go
+/internal/crud/tournament.go
+/internal/db/postgres.go
+/internal/db/redis.go
+and related other files
+
+done - 
+Update redis.go file with crud changes.Update redis.go file with crud changes.  There are still setLeaderboard here: 
+done - 
+This was wrong, crud file only includes with this structure: 
+/internal/crud/leaderboard.go
+/internal/crud/users.go
+/internal/crud/tournament.go
+/internal/db/postgres.go
+/internal/db/redis.go
+apply crud changes to redis again same with postgres.
+Carry all code to /internal/crud/*.go to related with *.go db sessions codes. /internal/db/redis file just include Init functions to call db sessions.
+
+done -
+Carry all validation related files to from model files.
+/validation/leaderboard.go 
+/validation/users.go 
+/validation/tournament.go 
+
+done -
+Update the leaderboards should set by users level degree. Add a function that when users joined with their money and level informaiton, joining a tournament decrease their money with 50. Finalizing a tournament gives rank one 200 money, rank two 100 money and rank three 50 money. Change the necessary files.
+
+
+structure has been changed please implement to new files:
+/internal/db/postgres.go
+/internal/db/redis.go
+
+/internal/router/leaderboard.go
+/internal/router/users.go
+/internal/router/tournament.go
+
+model layer has been updated. It contains struct and validate codes.
+/model/leaderboard.go
+/model/users.go
+/model/tournament.go
+
+service-layer has been added. It needs to contains functions like below from :
+/service/leaderboard.go
+/service/users.go
+/service/tournament.go
+
+service files should include functions that uses validations when we need to update db for example:
+func calculateLevel(money int) int {
+	return money/100 + 1
+}
+
+Also update following files according to changes:
+model files
+/cmd/app/main.go
+
+backup files:
+structure has been changed please implement to new files:
+/internal/db/postgres.go
+/internal/db/redis.go
+/internal/router/leaderboard.go
+/internal/router/users.go
+service-layer has been added. It needs to contains functions like below from :
+/service/service.go
+service.go should include functions that uses validations when we need to update db for example:
+func calculateLevel(money int) int {
+	return money/100 + 1
+}
+
+Also update following files:
+/model/user.go
+/cmd/app/main.go
+
+add a functipn that when users joined with their money and level informaiton,
+decreaser their money with 50.
+
+update endpoints with users now need to give their level information, its not set by their money level anymore.
+
+also leaderboard should set by users level degree

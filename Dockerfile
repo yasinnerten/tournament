@@ -1,26 +1,34 @@
-# Use the official Golang image as a build stage
-FROM golang:1.23 AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
+RUN go mod download
 RUN go mod tidy
+RUN go mod vendor
 
 COPY . .
 
-# Build the Go application
-RUN go build -o main .
+# Copy the .env file for debugging purposes
+COPY .env .env
+# List the contents of the /app directory to verify the presence of the .env file
+RUN ls -la /app/scripts
 
-# Use the official Golang image for the final executable
-FROM golang:1.23
+# Run the build script
+RUN /app/scripts/build.sh
 
-WORKDIR /app
+FROM alpine:latest
 
-# Copy the source code and built executable from the builder stage
-COPY --from=builder /app .
+WORKDIR /root/
 
-# Ensure the executable has the correct permissions
-RUN chmod +x ./main
+COPY --from=builder /app/bin/app .
 
-# Command to run the application
-CMD ["go", "run", "main.go"]
+# Copy the .env file for debugging purposes
+COPY .env .env
+
+# Copy the generated Swagger documentation
+COPY docs /app/docs
+
+EXPOSE 8080
+
+CMD ["./app"]
