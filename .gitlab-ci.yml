@@ -1,0 +1,42 @@
+default:
+  image: docker:latest
+  services:
+    - name: docker:dind
+      command: ["--host=tcp://0.0.0.0:2375", "--host=unix:///var/run/docker.sock"]
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+before_script:
+  - unset DOCKER_HOST
+  - apk update && apk add --no-cache curl docker docker-cli containerd docker-compose
+  - curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+  - chmod +x /usr/local/bin/docker-compose
+
+  - docker compose version
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script:
+    - echo "docker compose running:"
+    - docker compose -f docker-compose.yml build
+  artifacts:
+    expire_in: 1 week
+    name: "artifact-file"
+    paths:
+      - /docker-compose.yml
+      - /builds/yasinnetournament/
+
+  only:
+    - main
+
+test:
+  stage: test
+  script:
+    - echo "Container will be tested if its works:"
+  only:
+    - main
