@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournament API</title>
+<meta name="description" content="A Go tournament and leaderboard service built on Gin, GORM, Postgres and Redis, with a live browser simulation of its scoring and prize rules.">
+<meta name="author" content="Ahmet Yasin Erten">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Tournament API">
+<meta property="og:description" content="A Go tournament and leaderboard service on Gin, Postgres and Redis, with a live simulation of its rules.">
+<meta property="og:url" content="https://yasinnerten.github.io/tournament/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%8F%86%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f6f7f9;
+    --surface2: #eef0f3;
+    --border: #e2e5ea;
+    --text: #1b1f24;
+    --muted: #5b636d;
+    --accent: #2f6f4f;
+    --accent2: #b8863b;
+    --danger: #b0413e;
+    --code-bg: #f2f3f5;
+    --gold: #c9a227;
+    --silver: #9aa0a6;
+    --bronze: #b07a3c;
+    --max: 900px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a;
+      --surface: #1b1f23;
+      --surface2: #22272c;
+      --border: #2c3238;
+      --text: #e6e8ea;
+      --muted: #9aa3ac;
+      --accent: #6cc295;
+      --accent2: #e0b566;
+      --danger: #ef8481;
+      --code-bg: #1e2226;
+      --gold: #e3c65f;
+      --silver: #b9c0c7;
+      --bronze: #cf9a5e;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+
+  header.hero { border-bottom: 1px solid var(--border); background: var(--surface); padding: 52px 0 38px; }
+  .eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.2; margin: 0 0 14px; letter-spacing: -0.02em; }
+  .lede { font-size: 17px; color: var(--muted); margin: 0 0 22px; max-width: 66ch; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { display: inline-block; padding: 9px 15px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { color: #fff; opacity: .9; }
+  .stack { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 22px; }
+  .chip { font-size: 12.5px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 20px; color: var(--muted); background: var(--bg); }
+
+  main { padding: 8px 0 64px; }
+  section { padding-top: 46px; }
+  h2 { font-size: 22px; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); letter-spacing: -0.01em; }
+  h3 { font-size: 17px; margin: 30px 0 8px; }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+
+  figure { margin: 24px 0; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  figure img { display: block; width: 100%; height: auto; background: #fff; border-radius: 4px; }
+  figcaption { margin-top: 12px; font-size: 13.5px; color: var(--muted); text-align: center; }
+  .scroller { overflow-x: auto; }
+  .scroller svg { display: block; width: 100%; min-width: 620px; height: auto; }
+
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+  p code, li code, td code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 13px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 16px 0; }
+  th, td { padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .verb { font: 600 11.5px/1 ui-monospace, Menlo, monospace; padding: 4px 7px; border-radius: 4px; display: inline-block; color: #fff; }
+  .get { background: #3d7ea6; } .post { background: #2f6f4f; } .put { background: #b8863b; } .delete { background: #b0413e; }
+
+  .note { border: 1px solid var(--border); border-left: 3px solid var(--accent2); background: var(--surface); border-radius: 6px; padding: 14px 16px; margin: 20px 0; font-size: 15px; }
+  .note p:last-child { margin-bottom: 0; }
+  .note strong { display: block; margin-bottom: 5px; }
+
+  footer { border-top: 1px solid var(--border); background: var(--surface); padding: 28px 0 40px; font-size: 14px; color: var(--muted); }
+
+  /* live tournament panel */
+  .demo { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 18px; margin: 22px 0; }
+  .modes { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; margin-bottom: 14px; }
+  .mode { font: inherit; font-size: 13.5px; padding: 7px 15px; background: var(--bg); color: var(--muted); border: 0; cursor: pointer; }
+  .mode + .mode { border-left: 1px solid var(--border); }
+  .mode.active { background: var(--accent); color: #fff; }
+  .controls, .api-bar { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-bottom: 16px; }
+  .btn-sm { font: inherit; font-size: 13.5px; padding: 7px 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); cursor: pointer; }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-sm.primary:hover { color: #fff; opacity: .9; }
+  .btn-sm:disabled { opacity: .45; cursor: not-allowed; }
+  .pot { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+  .pot input, .api-bar input {
+    font: inherit; font-size: 13.5px; padding: 6px 9px; width: 100px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text);
+  }
+  .api-bar input { width: 240px; flex: 1 1 220px; }
+  .api-state { font-size: 13px; color: var(--muted); }
+  .api-state.ok { color: var(--accent); }
+  .api-state.bad { color: var(--danger); }
+
+  .board-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+  .t-name { font-size: 17px; font-weight: 600; margin-right: 8px; }
+  .t-meta { font-size: 13px; color: var(--muted); display: flex; gap: 14px; font-variant-numeric: tabular-nums; }
+  .badge { font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); }
+  .badge.planned { border-color: var(--border); }
+  .badge.ongoing { border-color: var(--accent); color: var(--accent); }
+  .badge.finished { border-color: var(--accent2); color: var(--accent2); }
+
+  .progress { height: 5px; border-radius: 3px; background: var(--surface2); overflow: hidden; margin-bottom: 14px; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .45s ease; }
+
+  .board { position: relative; min-height: 70px; }
+  .row {
+    position: absolute; left: 0; right: 0;
+    display: grid; grid-template-columns: 34px 1fr 60px 78px 74px; gap: 10px; align-items: center;
+    padding: 9px 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg);
+    font-size: 14px; transition: transform .5s cubic-bezier(.2,.7,.3,1), opacity .35s ease;
+  }
+  .row .rank { font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .row.r1 .rank { color: var(--gold); } .row.r2 .rank { color: var(--silver); } .row.r3 .rank { color: var(--bronze); }
+  .row .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .lv, .row .money, .row .score { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
+  .row .lv { color: var(--muted); }
+  .row .score { font-weight: 600; }
+  .row .prize { color: var(--accent); font-weight: 600; }
+  .row.enter { opacity: 0; }
+  .board .hint { color: var(--muted); font-size: 14px; padding: 8px 2px; }
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 28px 1fr 62px 66px; font-size: 13px; }
+    .row .lv { display: none; }
+  }
+
+  .log-head { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 18px 0 7px; }
+  .log {
+    height: 132px; overflow-y: auto; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--bg); padding: 9px 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.75;
+  }
+  .log div { color: var(--muted); }
+  .log .hl { color: var(--text); }
+  .log .win { color: var(--accent); }
+  .fineprint { font-size: 14px; color: var(--muted); }
+
+  .tablewrap { overflow-x: auto; margin: 16px 0; }
+  .tablewrap table { margin: 0; min-width: 440px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Go &middot; Gin &middot; Postgres &middot; Redis</p>
+    <h1>Tournament API</h1>
+    <p class="lede">A backend service for running player tournaments with a live leaderboard. Players are stored in Postgres, ranked in a Redis sorted set, and the whole thing runs as three containers on two isolated Docker networks.</p>
+    <div class="links">
+      <a class="btn primary" href="#live">See it running</a>
+      <a class="btn" href="https://github.com/yasinnerten/tournament">Source code</a>
+      <a class="btn" href="#api">API reference</a>
+      <a class="btn" href="#run">Run it locally</a>
+    </div>
+    <div class="stack">
+      <span class="chip">Go 1.23</span>
+      <span class="chip">Gin</span>
+      <span class="chip">GORM</span>
+      <span class="chip">PostgreSQL 13</span>
+      <span class="chip">Redis 6</span>
+      <span class="chip">Docker Compose</span>
+      <span class="chip">Swagger</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="what">
+    <h2>What it does</h2>
+    <p>A tournament is a pot of prize money that players buy into. Joining costs 50 coins. Every player carries a level and a balance, and those two numbers decide their rank while the tournament runs. When the tenth player joins, the tournament closes and the pot is paid out down the standings.</p>
+    <p>The interesting part is where the data lives. Postgres holds the durable records, players, tournaments and archived results, through GORM. Redis holds the thing that changes constantly, the live ranking, as a sorted set. Reading the current standings never touches Postgres, and a finished tournament gets written back to Postgres and dropped from Redis.</p>
+  </section>
+
+  <section id="live">
+    <h2>See it running</h2>
+    <p>The service needs Go, Postgres and Redis, none of which run on a static page. What runs below is the same rule set reimplemented in the browser: the score formula, the buy-in, the closing threshold and the prize split are read straight from <code>service/tournament.go</code>. Players join on a timer, the ranking re-sorts as they do, and the pot pays out when the tournament closes.</p>
+    <p>If you have the real service running, switch to Live API and point it at your instance to drive the same panel from actual endpoints.</p>
+
+    <div class="demo">
+      <div class="modes">
+        <button class="mode active" data-mode="sim" type="button">Simulation</button>
+        <button class="mode" data-mode="api" type="button">Live API</button>
+      </div>
+
+      <div id="api-bar" class="api-bar" hidden>
+        <input id="api-url" type="url" value="http://localhost:8080" spellcheck="false" aria-label="API base URL">
+        <button id="api-connect" class="btn-sm primary" type="button">Connect</button>
+        <span id="api-state" class="api-state">Not connected</span>
+      </div>
+
+      <div id="sim-bar" class="controls">
+        <button id="play" class="btn-sm primary" type="button">Pause</button>
+        <button id="step" class="btn-sm" type="button">Add a player</button>
+        <button id="reset" class="btn-sm" type="button">Reset</button>
+        <label class="pot">Prize pool
+          <input id="pot" type="number" min="0" step="100" value="1000">
+        </label>
+      </div>
+
+      <div class="board-head">
+        <div>
+          <span id="t-name" class="t-name">Summer Cup</span>
+          <span id="t-status" class="badge planned">planned</span>
+        </div>
+        <div class="t-meta">
+          <span id="t-count">0 of 10 players</span>
+          <span id="t-pot">pot 1,000</span>
+        </div>
+      </div>
+
+      <div class="progress"><div id="t-bar"></div></div>
+
+      <div class="board" id="board"></div>
+
+      <div class="log-head">Event log</div>
+      <div class="log" id="log"></div>
+    </div>
+
+    <p class="fineprint">Rank is decided by score, computed as <code>level &times; 100 + money</code>, exactly as <code>calculateScore</code> does in the Go service. Ties keep the earlier joiner ahead, which mirrors how a Redis sorted set holds insertion order for equal scores.</p>
+  </section>
+
+  <section id="how">
+    <h2>How a request moves through it</h2>
+    <p>Every endpoint follows the same path down the layers. The router only parses and responds, the service holds the rules, validation guards anything heading for a write, and CRUD is the only layer that talks to a database. Nothing skips a step, which is what makes the rules testable without a running Postgres.</p>
+
+    <figure>
+      <div class="scroller">
+        <svg viewBox="0 0 860 250" role="img" aria-label="Layer diagram: router calls service, service checks validation and calls CRUD, CRUD talks to Postgres and Redis.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g fill="none" stroke="currentColor" stroke-width="1.6" color="var(--muted)">
+            <line x1="150" y1="70" x2="196" y2="70" marker-end="url(#ar)"/>
+            <line x1="316" y1="70" x2="362" y2="70" marker-end="url(#ar)"/>
+            <line x1="482" y1="70" x2="528" y2="70" marker-end="url(#ar)"/>
+            <line x1="258" y1="98" x2="258" y2="152" marker-end="url(#ar)"/>
+            <line x1="610" y1="98" x2="610" y2="152" marker-end="url(#ar)"/>
+            <line x1="676" y1="70" x2="722" y2="70" marker-end="url(#ar)"/>
+          </g>
+
+          <g font-size="13" font-family="ui-monospace, Menlo, monospace">
+            <g>
+              <rect x="16" y="44" width="134" height="52" rx="7" fill="var(--surface2)" stroke="var(--border)"/>
+              <text x="83" y="66" text-anchor="middle" fill="var(--text)" font-weight="600">router</text>
+              <text x="83" y="83" text-anchor="middle" fill="var(--muted)" font-size="11">gin handlers</text>
+            </g>
+            <g>
+              <rect x="196" y="44" width="120" height="52" rx="7" fill="var(--surface2)" stroke="var(--border)"/>
+              <text x="256" y="66" text-anchor="middle" fill="var(--text)" font-weight="600">service</text>
+              <text x="256" y="83" text-anchor="middle" fill="var(--muted)" font-size="11">the rules</text>
+            </g>
+            <g>
+              <rect x="362" y="44" width="120" height="52" rx="7" fill="var(--surface2)" stroke="var(--border)"/>
+              <text x="422" y="66" text-anchor="middle" fill="var(--text)" font-weight="600">crud</text>
+              <text x="422" y="83" text-anchor="middle" fill="var(--muted)" font-size="11">queries only</text>
+            </g>
+            <g>
+              <rect x="528" y="44" width="148" height="52" rx="7" fill="var(--surface2)" stroke="var(--border)"/>
+              <text x="602" y="66" text-anchor="middle" fill="var(--text)" font-weight="600">internal/db</text>
+              <text x="602" y="83" text-anchor="middle" fill="var(--muted)" font-size="11">connections</text>
+            </g>
+
+            <g>
+              <rect x="196" y="152" width="120" height="46" rx="7" fill="none" stroke="var(--border)" stroke-dasharray="4 3"/>
+              <text x="256" y="180" text-anchor="middle" fill="var(--muted)">validation</text>
+            </g>
+            <g>
+              <rect x="536" y="152" width="132" height="46" rx="7" fill="none" stroke="var(--border)" stroke-dasharray="4 3"/>
+              <text x="602" y="180" text-anchor="middle" fill="var(--muted)">model + gorm</text>
+            </g>
+
+            <g>
+              <rect x="722" y="24" width="122" height="42" rx="7" fill="var(--surface)" stroke="var(--accent)"/>
+              <text x="783" y="50" text-anchor="middle" fill="var(--accent)" font-weight="600">Postgres</text>
+              <rect x="722" y="76" width="122" height="42" rx="7" fill="var(--surface)" stroke="var(--accent2)"/>
+              <text x="783" y="102" text-anchor="middle" fill="var(--accent2)" font-weight="600">Redis</text>
+            </g>
+          </g>
+
+          <g font-size="11" fill="var(--muted)" font-family="ui-monospace, Menlo, monospace">
+            <text x="173" y="62" text-anchor="middle">calls</text>
+            <text x="339" y="62" text-anchor="middle">writes</text>
+            <text x="505" y="62" text-anchor="middle">uses</text>
+            <text x="268" y="128">checks first</text>
+            <text x="620" y="128">maps structs</text>
+          </g>
+
+          <text x="16" y="232" font-size="12" fill="var(--muted)">A handler that skipped the service layer would bypass every rule below it, so none of them do.</text>
+        </svg>
+      </div>
+      <figcaption>The four layers, and the two the service leans on sideways.</figcaption>
+    </figure>
+
+    <h3>What happens when a player joins</h3>
+    <p>Joining is the one call that touches both databases in a single request. The buy-in and the tournament record are Postgres work, the ranking update is Redis work, and the closing check sits in between.</p>
+
+    <figure>
+      <div class="scroller">
+        <svg viewBox="0 0 860 330" role="img" aria-label="Sequence diagram of POST /tournaments/join showing calls to Postgres and Redis.">
+          <g stroke="var(--border)" stroke-width="1.4" stroke-dasharray="4 4">
+            <line x1="90" y1="52" x2="90" y2="300"/>
+            <line x1="300" y1="52" x2="300" y2="300"/>
+            <line x1="530" y1="52" x2="530" y2="300"/>
+            <line x1="750" y1="52" x2="750" y2="300"/>
+          </g>
+          <g font-size="12.5" font-family="ui-monospace, Menlo, monospace" font-weight="600">
+            <rect x="26" y="14" width="128" height="30" rx="6" fill="var(--surface2)" stroke="var(--border)"/>
+            <text x="90" y="34" text-anchor="middle" fill="var(--text)">client</text>
+            <rect x="236" y="14" width="128" height="30" rx="6" fill="var(--surface2)" stroke="var(--border)"/>
+            <text x="300" y="34" text-anchor="middle" fill="var(--text)">service</text>
+            <rect x="466" y="14" width="128" height="30" rx="6" fill="var(--surface)" stroke="var(--accent)"/>
+            <text x="530" y="34" text-anchor="middle" fill="var(--accent)">Postgres</text>
+            <rect x="686" y="14" width="128" height="30" rx="6" fill="var(--surface)" stroke="var(--accent2)"/>
+            <text x="750" y="34" text-anchor="middle" fill="var(--accent2)">Redis</text>
+          </g>
+          <g fill="none" stroke="currentColor" stroke-width="1.6" color="var(--muted)">
+            <line x1="90"  y1="86"  x2="294" y2="86"  marker-end="url(#ar)"/>
+            <line x1="300" y1="122" x2="524" y2="122" marker-end="url(#ar)"/>
+            <line x1="300" y1="158" x2="524" y2="158" marker-end="url(#ar)"/>
+            <line x1="300" y1="194" x2="524" y2="194" marker-end="url(#ar)"/>
+            <line x1="300" y1="230" x2="744" y2="230" marker-end="url(#ar)"/>
+            <line x1="294" y1="266" x2="90"  y2="266" marker-end="url(#ar)"/>
+          </g>
+          <g font-size="12" fill="var(--text)" font-family="ui-monospace, Menlo, monospace">
+            <text x="98"  y="80">POST /tournaments/join</text>
+            <text x="308" y="116">load tournament, reject if finished</text>
+            <text x="308" y="152">check balance, then money -= 50</text>
+            <text x="308" y="188">append player, close at 10</text>
+            <text x="308" y="224">ZADD leaderboard  score  userID</text>
+            <text x="112" y="260">200  joined</text>
+          </g>
+          <text x="26" y="312" font-size="12" fill="var(--muted)">The two databases are written in the same handler without a shared transaction, which is the weak point noted under Known gaps.</text>
+        </svg>
+      </div>
+      <figcaption>One join request, four writes, two databases.</figcaption>
+    </figure>
+
+    <h3>Tournament lifecycle</h3>
+    <figure>
+      <div class="scroller">
+        <svg viewBox="0 0 860 190" role="img" aria-label="State machine: planned goes to ongoing, ongoing goes to finished at ten players.">
+          <g font-size="13.5" font-family="ui-monospace, Menlo, monospace">
+            <rect x="40" y="58" width="150" height="54" rx="27" fill="var(--surface2)" stroke="var(--border)"/>
+            <text x="115" y="90" text-anchor="middle" fill="var(--text)" font-weight="600">planned</text>
+
+            <rect x="355" y="58" width="150" height="54" rx="27" fill="var(--surface2)" stroke="var(--accent)" stroke-dasharray="5 4"/>
+            <text x="430" y="90" text-anchor="middle" fill="var(--accent)" font-weight="600">ongoing</text>
+
+            <rect x="670" y="58" width="150" height="54" rx="27" fill="var(--surface2)" stroke="var(--accent2)"/>
+            <text x="745" y="90" text-anchor="middle" fill="var(--accent2)" font-weight="600">finished</text>
+          </g>
+          <g fill="none" stroke="currentColor" stroke-width="1.6" color="var(--muted)">
+            <line x1="190" y1="85" x2="349" y2="85" marker-end="url(#ar)"/>
+            <line x1="505" y1="85" x2="664" y2="85" marker-end="url(#ar)"/>
+            <path d="M115 58 Q115 20 430 20 Q745 20 745 58" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+          </g>
+          <g font-size="11.5" fill="var(--muted)" font-family="ui-monospace, Menlo, monospace">
+            <text x="270" y="78" text-anchor="middle">first player joins</text>
+            <text x="585" y="78" text-anchor="middle">tenth player joins</text>
+            <text x="430" y="14" text-anchor="middle">what the code does today: planned straight to finished</text>
+          </g>
+          <text x="40" y="160" font-size="12" fill="var(--muted)">Nothing in the Go code assigns the ongoing state, so the middle box is intent rather than behaviour. See Known gaps.</text>
+          <text x="40" y="178" font-size="12" fill="var(--muted)">The simulation above shows the lifecycle as intended, with ongoing set on the first join.</text>
+        </svg>
+      </div>
+      <figcaption>The three states, and the transition that is missing from the code.</figcaption>
+    </figure>
+
+    <h3>How it is deployed</h3>
+    <p>Compose brings up three containers across two bridge networks with fixed addressing. The app sits on both, so it can serve clients on one network and reach the databases on the other. Postgres and Redis are never exposed to the app network.</p>
+    <figure>
+      <img src="assets/architecture.png" alt="Architecture diagram showing the app container on the 10.0.1.0/24 app network and 10.0.2.0/24 db network, with Postgres and Redis on the db network, and the internal Go package layout.">
+      <figcaption>The full picture, from CI through Compose down to the package layout.</figcaption>
+    </figure>
+  </section>
+
+  <section id="rules">
+    <h2>The rules</h2>
+    <p>Every number below is taken from <code>service/tournament.go</code> and <code>model/users.go</code>, and the simulation runs on the same values.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Rule</th><th>Value</th><th>Where it lives</th></tr></thead>
+        <tbody>
+          <tr><td>Player score</td><td><code>level &times; 100 + money</code></td><td><code>calculateScore</code></td></tr>
+          <tr><td>Cost to join a tournament</td><td>50 coins, refused below that</td><td><code>JoinTournament</code></td></tr>
+          <tr><td>Players before a tournament closes</td><td>10</td><td><code>JoinTournament</code></td></tr>
+          <tr><td>Cost to level up</td><td><code>100 + level &times; 50</code></td><td><code>LevelUpUser</code></td></tr>
+          <tr><td>First place</td><td>half the pot</td><td rowspan="4"><code>calculatePrize</code></td></tr>
+          <tr><td>Second place</td><td>a quarter of the pot</td></tr>
+          <tr><td>Third place</td><td>an eighth of the pot</td></tr>
+          <tr><td>Fourth place and below</td><td>a sixteenth of the pot each</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The split is not capped at the pot. Ten players in a 1,000 coin tournament are paid 500, 250, 125, then 62 each for the remaining seven, which comes to 1,309. Whether that is a bug or a house subsidy is a design decision that has not been made yet.</p>
+  </section>
+
+  <section id="api">
+    <h2>API reference</h2>
+    <p>Seventeen endpoints across users, tournaments and leaderboards. The running service serves this same list as Swagger UI at <code>/swagger/index.html</code>.</p>
+
+    <h3>Players</h3>
+    <div class="tablewrap">
+      <table>
+        <tbody>
+          <tr><td><span class="verb post">POST</span></td><td><code>/users</code></td><td>Create a player from a name, balance and level.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/users</code></td><td>List every player.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/users/{id}</code></td><td>Fetch one player.</td></tr>
+          <tr><td><span class="verb put">PUT</span></td><td><code>/users/{id}</code></td><td>Update a player.</td></tr>
+          <tr><td><span class="verb delete">DELETE</span></td><td><code>/users/{id}</code></td><td>Remove a player.</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td><code>/users/{id}/levelup</code></td><td>Spend coins to gain a level and rescore.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Tournaments</h3>
+    <div class="tablewrap">
+      <table>
+        <tbody>
+          <tr><td><span class="verb post">POST</span></td><td><code>/tournaments</code></td><td>Create a tournament and its empty leaderboard.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/tournaments</code></td><td>List all tournaments with their players.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/tournaments/ongoing</code></td><td>List tournaments in the ongoing state.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/tournaments/{id}</code></td><td>Fetch one tournament.</td></tr>
+          <tr><td><span class="verb put">PUT</span></td><td><code>/tournaments/{id}</code></td><td>Update a tournament.</td></tr>
+          <tr><td><span class="verb delete">DELETE</span></td><td><code>/tournaments/{id}</code></td><td>Remove a tournament.</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td><code>/tournaments/join</code></td><td>Buy a player into a tournament.</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td><code>/tournaments/{id}/end</code></td><td>Close a tournament.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Leaderboards</h3>
+    <div class="tablewrap">
+      <table>
+        <tbody>
+          <tr><td><span class="verb get">GET</span></td><td><code>/leaderboard</code></td><td>Current standings, paged with <code>start</code> and <code>stop</code>.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/leaderboard/active</code></td><td>Same, filtered to active entries.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/leaderboard/tournament/{id}</code></td><td>Standings for one tournament.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/leaderboard/tournament/{id}/active</code></td><td>Active entries for one tournament.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/leaderboard/tournament/{id}/finished</code></td><td>Archived result for a closed tournament.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/leaderboard/user/{id}</code></td><td>Every board a player appears on.</td></tr>
+          <tr><td><span class="verb get">GET</span></td><td><code>/leaderboard/user/{id}/active</code></td><td>Only the boards still running.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Operations</h3>
+    <div class="tablewrap">
+      <table>
+        <tbody>
+          <tr><td><span class="verb get">GET</span></td><td><code>/health</code></td><td>Pings both databases and reports which one is down.</td></tr>
+          <tr><td><span class="verb post">POST</span></td><td><code>/clear-database</code></td><td>Truncates all three tables. Local use only.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="run">
+    <h2>Run it locally</h2>
+    <p>Compose builds the binary, waits for Postgres to pass its health check, and starts the API on port 8080.</p>
+    <pre><code>git clone https://github.com/yasinnerten/tournament.git
+cd tournament
+
+# .env is not committed. Create it first:
+cat &gt; .env &lt;&lt;'EOF'
+POSTGRES_DSN=host=postgres user=postgres password=postgres dbname=tournament port=5432 sslmode=disable
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=tournament
+REDIS_HOST=redis
+REDIS_PORT=6379
+EOF
+
+docker compose --profile default up --build</code></pre>
+
+    <p>Then create a few players and run a tournament:</p>
+    <pre><code>curl -s localhost:8080/health
+
+curl -X POST localhost:8080/users -H 'Content-Type: application/json' \
+  -d '{"name":"Alice","money":100,"level":1}'
+curl -X POST localhost:8080/users -H 'Content-Type: application/json' \
+  -d '{"name":"Kassandra","money":500,"level":4}'
+
+curl -X POST localhost:8080/tournaments -H 'Content-Type: application/json' \
+  -d '{"name":"Summer Cup","prize":1000}'
+
+curl -X POST localhost:8080/tournaments/join -H 'Content-Type: application/json' \
+  -d '{"tournament_id":1,"user_id":1}'
+
+curl -s localhost:8080/leaderboard</code></pre>
+
+    <p>Swagger UI is at <code>localhost:8080/swagger/index.html</code>. Tests run with <code>go test ./...</code> or against containers with <code>docker compose --profile test up --build</code>.</p>
+
+    <div class="note">
+      <strong>Regenerating the Swagger docs</strong>
+      <p>The <code>docs/</code> package is generated and committed, and <code>main.go</code> imports it for its side effects. After changing any annotation, run <code>swag init -g cmd/app/main.go -o docs</code> or the build will use a stale spec.</p>
+    </div>
+  </section>
+
+  <section id="gaps">
+    <h2>Known gaps</h2>
+    <p>These are real and currently unfixed. They are listed here rather than left for someone to trip over, and the simulation above quietly does the right thing in each case so the intended behaviour is still visible.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Problem</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Nothing ever assigns <code>model.Ongoing</code></td>
+            <td>Tournaments go straight from planned to finished. <code>GET /tournaments/ongoing</code> always returns empty, and <code>FinalizeTournament</code> rejects every tournament it is handed because it requires the ongoing state.</td>
+          </tr>
+          <tr>
+            <td><code>GetTournamentByKey</code> filters on a <code>key</code> column</td>
+            <td>The <code>Tournament</code> struct has no such field, so GORM never creates the column and the query errors. This is the first call inside <code>FinalizeTournament</code>, so prize payout cannot run at all.</td>
+          </tr>
+          <tr>
+            <td>Redis writes to one global <code>leaderboard</code> key</td>
+            <td>All tournaments share a single sorted set, so standings from different tournaments are mixed together. <code>RemoveLeaderboardFromRedis</code> deletes <code>leaderboard:{id}</code>, a key nothing ever writes, so the real set is never cleared.</td>
+          </tr>
+          <tr>
+            <td><code>SetLeaderboard</code> ignores its <code>key</code> argument</td>
+            <td>Entries are created without a <code>TournamentID</code>, so they cannot be filtered back to the tournament they belong to.</td>
+          </tr>
+          <tr>
+            <td><code>Money</code> and <code>Level</code> are tagged <code>validate:"required"</code></td>
+            <td>The validator treats zero as missing, so a player who spends down to nothing can no longer be updated. <code>gte=0</code> is what was meant.</td>
+          </tr>
+          <tr>
+            <td><code>EndTournament</code> needs ten players or an already finished tournament</td>
+            <td>A tournament cannot be closed early, though the comment above it says manual closing is the point.</td>
+          </tr>
+          <tr>
+            <td>Postgres and Redis are written without a shared transaction</td>
+            <td>A join that succeeds in Postgres and then fails at Redis leaves the player charged and unranked. There is no compensating write.</td>
+          </tr>
+          <tr>
+            <td>The prize split can exceed the pot</td>
+            <td>A full ten player tournament pays out more than it collected. See the note under The rules.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The buy-in threshold is worth a second look too. <code>to-do.txt</code> specifies a leaderboard once three players have joined, while the code closes the tournament at ten.</p>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <ul>
+      <li>GitHub: <a href="https://github.com/yasinnerten/">@yasinnerten</a></li>
+      <li>LinkedIn: <a href="https://www.linkedin.com/in/yasinnerten/">linkedin.com/in/yasinnerten</a></li>
+      <li>Website: <a href="https://yasinnerten.com">yasinnerten.com</a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Tournament API by Ahmet Yasin Erten. The panel on this page is a browser reimplementation of the service rules, not the service itself.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- rules, mirrored from service/tournament.go and model/users.go ----
+  var JOIN_COST   = 50;   // JoinTournament
+  var MAX_PLAYERS = 10;   // JoinTournament closes the tournament here
+  var ROW_H       = 46;
+
+  function score(p) { return p.level * 100 + p.money; }          // calculateScore
+  function levelUpCost(level) { return 100 + level * 50; }       // LevelUpUser
+  function prizeFor(pot, position) {                             // calculatePrize
+    if (position === 1) return Math.floor(pot / 2);
+    if (position === 2) return Math.floor(pot / 4);
+    if (position === 3) return Math.floor(pot / 8);
+    return Math.floor(pot / 16);
+  }
+
+  // Names lifted from the curl examples in the README, then padded out.
+  var ROSTER = [
+    { name: "Alice",     money: 100, level: 1 },
+    { name: "Frank",     money: 200, level: 1 },
+    { name: "Yasin",     money: 250, level: 3 },
+    { name: "Batu",      money: 150, level: 2 },
+    { name: "Meric",     money: 199, level: 3 },
+    { name: "Kassandra", money: 500, level: 4 },
+    { name: "Deniz",     money: 320, level: 2 },
+    { name: "Iris",      money: 620, level: 5 },
+    { name: "Omar",      money: 180, level: 4 },
+    { name: "Lena",      money: 440, level: 3 },
+    { name: "Tarik",     money: 90,  level: 6 },
+    { name: "Noor",      money: 700, level: 2 }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var board = $("board"), log = $("log");
+  var elName = $("t-name"), elStatus = $("t-status"), elCount = $("t-count"),
+      elPot = $("t-pot"), elBar = $("t-bar");
+  var btnPlay = $("play"), btnStep = $("step"), btnReset = $("reset"), inputPot = $("pot");
+
+  var state, timer = null, playing = true, mode = "sim", rows = {};
+
+  function fmt(n) { return Math.round(n).toLocaleString("en-US"); }
+
+  function say(text, cls) {
+    var line = document.createElement("div");
+    if (cls) line.className = cls;
+    line.textContent = text;
+    log.appendChild(line);
+    while (log.children.length > 120) log.removeChild(log.firstChild);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function reset() {
+    var pot = Math.max(0, parseInt(inputPot.value, 10) || 0);
+    state = { name: "Summer Cup", status: "planned", pot: pot, players: [], seq: 0, pool: ROSTER.slice() };
+    rows = {};
+    board.innerHTML = '<p class="hint">No players yet. The tournament opens when the first one buys in.</p>';
+    log.innerHTML = "";
+    say("POST /tournaments  {\"name\":\"Summer Cup\",\"prize\":" + pot + "}");
+    say("tournament created, status planned");
+    render();
+  }
+
+  function join() {
+    if (state.status === "finished") return;
+
+    if (!state.pool.length) {                       // roster exhausted, invent one
+      var n = state.seq + 1;
+      state.pool.push({ name: "Player " + n, money: 100 + ((n * 137) % 500), level: 1 + (n % 5) });
+    }
+    var pick = state.pool.splice(Math.floor(Math.random() * state.pool.length), 1)[0];
+    var player = { id: ++state.seq, name: pick.name, money: pick.money, level: pick.level, prize: 0 };
+
+    // JoinTournament refuses anyone who cannot cover the buy-in.
+    if (player.money < JOIN_COST) {
+      say(player.name + " has " + player.money + ", buy-in is " + JOIN_COST + ", refused", "hl");
+      return;
+    }
+
+    player.money -= JOIN_COST;                      // money -= 50
+    state.players.push(player);
+
+    if (state.status === "planned") {
+      state.status = "ongoing";
+      say("first buy-in, status planned -> ongoing", "hl");
+    }
+
+    say("POST /tournaments/join  {\"tournament_id\":1,\"user_id\":" + player.id + "}");
+    say("  " + player.name + " paid " + JOIN_COST + ", balance " + player.money +
+        ", level " + player.level);
+    say("  ZADD leaderboard " + score(player) + " " + player.id);
+
+    if (state.players.length >= MAX_PLAYERS) finalize();
+    render();
+  }
+
+  function finalize() {
+    state.status = "finished";
+    var ranked = ordered();
+    say("tenth buy-in, tournament closes", "hl");
+    ranked.forEach(function (p, i) {
+      var prize = prizeFor(state.pot, i + 1);
+      p.prize = prize;
+      p.money += prize;
+    });
+    var paid = ranked.reduce(function (a, p) { return a + p.prize; }, 0);
+    say("payout: " + fmt(ranked[0].prize) + " / " + fmt(ranked[1].prize) + " / " +
+        fmt(ranked[2].prize) + ", then " + fmt(prizeFor(state.pot, 4)) + " each", "win");
+    say("  winner " + ranked[0].name + " with " + fmt(score(ranked[0])), "win");
+    say("  pot " + fmt(state.pot) + ", paid out " + fmt(paid) +
+        (paid > state.pot ? "  (over the pot, see Known gaps)" : ""), paid > state.pot ? "hl" : "");
+    say("  results written to Postgres, Redis key dropped");
+    stop();
+  }
+
+  function ordered() {
+    return state.players.slice().sort(function (a, b) {
+      var d = score(b) - score(a);
+      return d !== 0 ? d : a.id - b.id;   // ties keep the earlier joiner ahead
+    });
+  }
+
+  function render() {
+    elName.textContent = state.name;
+    elStatus.textContent = state.status;
+    elStatus.className = "badge " + state.status;
+    elCount.textContent = state.players.length + " of " + MAX_PLAYERS + " players";
+    elPot.textContent = "pot " + fmt(state.pot);
+    elBar.style.width = (state.players.length / MAX_PLAYERS * 100) + "%";
+
+    var ranked = ordered();
+    if (!ranked.length) return;
+    if (board.firstChild && board.firstChild.className === "hint") board.innerHTML = "";
+
+    ranked.forEach(function (p, i) {
+      var row = rows[p.id];
+      if (!row) {
+        row = document.createElement("div");
+        row.className = "row enter";
+        row.innerHTML = '<span class="rank"></span><span class="who"></span>' +
+                        '<span class="lv"></span><span class="money"></span><span class="score"></span>';
+        board.appendChild(row);
+        rows[p.id] = row;
+        row.style.transform = "translateY(" + (i * ROW_H) + "px)";
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { row.classList.remove("enter"); });
+        });
+      }
+      row.style.transform = "translateY(" + (i * ROW_H) + "px)";
+      row.className = "row" + (i < 3 && state.status === "finished" ? " r" + (i + 1) : "");
+      row.children[0].textContent = i + 1;
+      row.children[1].textContent = p.name;
+      row.children[2].textContent = "lv " + p.level;
+      row.children[3].textContent = fmt(p.money);
+      if (p.prize) {
+        row.children[4].textContent = "+" + fmt(p.prize);
+        row.children[4].className = "score prize";
+      } else {
+        row.children[4].textContent = fmt(score(p));
+        row.children[4].className = "score";
+      }
+    });
+    board.style.height = (ranked.length * ROW_H) + "px";
+  }
+
+  function stop() { playing = false; clearInterval(timer); timer = null; btnPlay.textContent = "Play"; }
+  function start() {
+    if (state.status === "finished") return;
+    playing = true; btnPlay.textContent = "Pause";
+    clearInterval(timer);
+    timer = setInterval(function () { if (mode === "sim") join(); }, 1900);
+  }
+
+  btnPlay.addEventListener("click", function () { playing ? stop() : start(); });
+  btnStep.addEventListener("click", function () { stop(); join(); });
+  btnReset.addEventListener("click", function () { reset(); start(); });
+  inputPot.addEventListener("change", function () {
+    state.pot = Math.max(0, parseInt(inputPot.value, 10) || 0);
+    render();
+  });
+
+  // ---- optional: drive the panel from a running instance ----
+  var apiBar = $("api-bar"), simBar = $("sim-bar"), apiState = $("api-state"), apiUrl = $("api-url");
+  var apiTimer = null;
+
+  function setMode(next) {
+    mode = next;
+    Array.prototype.forEach.call(document.querySelectorAll(".mode"), function (b) {
+      b.classList.toggle("active", b.dataset.mode === next);
+    });
+    apiBar.hidden = next !== "api";
+    simBar.hidden = next !== "sim";
+    if (next === "sim") {
+      clearInterval(apiTimer); apiTimer = null;
+      reset(); start();
+    } else {
+      stop();
+      board.innerHTML = '<p class="hint">Connect to an instance to show its live standings.</p>';
+      board.style.height = "auto";
+      log.innerHTML = "";
+      say("waiting for a base URL");
+    }
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".mode"), function (b) {
+    b.addEventListener("click", function () { setMode(b.dataset.mode); });
+  });
+
+  function base() { return apiUrl.value.trim().replace(/\/+$/, ""); }
+
+  function poll() {
+    var root = base();
+    fetch(root + "/leaderboard?start=0&stop=9", { mode: "cors" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (entries) {
+        return fetch(root + "/users").then(function (r) {
+          return r.ok ? r.json() : [];
+        }).then(function (users) { return [entries || [], users || []]; });
+      })
+      .then(function (pair) {
+        var entries = pair[0], users = pair[1], byId = {};
+        users.forEach(function (u) { byId[u.ID || u.id] = u; });
+
+        rows = {}; board.innerHTML = "";
+        state = { name: "Live leaderboard", status: "ongoing", pot: state.pot, players: [], seq: 0, pool: [] };
+        entries.forEach(function (e, i) {
+          var u = byId[e.user_id] || {};
+          state.players.push({
+            id: e.user_id || i + 1,
+            name: u.name || ("user " + (e.user_id || i + 1)),
+            money: u.money || 0,
+            level: u.level || 0,
+            prize: 0
+          });
+        });
+        render();
+        elCount.textContent = state.players.length + " ranked";
+        apiState.textContent = "Connected to " + root;
+        apiState.className = "api-state ok";
+      })
+      .catch(function (err) {
+        apiState.textContent = "Cannot reach " + root + " (" + err.message + ")";
+        apiState.className = "api-state bad";
+        say("GET " + root + "/leaderboard failed: " + err.message);
+        say("check the service is up, and that the page is allowed to call it");
+        clearInterval(apiTimer); apiTimer = null;
+      });
+  }
+
+  $("api-connect").addEventListener("click", function () {
+    var root = base();
+    apiState.textContent = "Connecting"; apiState.className = "api-state";
+    log.innerHTML = "";
+    say("GET " + root + "/health");
+    fetch(root + "/health", { mode: "cors" })
+      .then(function (r) { return r.json(); })
+      .then(function (body) {
+        say("  " + (body.message || JSON.stringify(body)));
+        poll();
+        clearInterval(apiTimer);
+        apiTimer = setInterval(poll, 3000);
+      })
+      .catch(function (err) {
+        apiState.textContent = "Cannot reach " + root;
+        apiState.className = "api-state bad";
+        say("  failed: " + err.message);
+        say("  a page served over https can call http://localhost, but not a plain http host");
+      });
+  });
+
+  reset();
+  start();
+})();
+</script>
+</body>
+</html>

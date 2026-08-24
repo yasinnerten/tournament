@@ -1,0 +1,11 @@
+# Secrets. The app reads these at startup; see the README for a template.
+.env
+
+# Build output. bin/app is currently tracked; run
+#   git rm --cached bin/app
+# to stop committing a 20 MB binary.
+bin/
+vendor/
+
+# Test output written by the compose test profile
+report.xml
